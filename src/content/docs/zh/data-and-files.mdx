@@ -1,0 +1,92 @@
+---
+title: 数据与文件
+description: OneBook 往哪里写、表长什么样，以及中文全文检索是怎么做的。
+sidebar:
+  order: 5
+---
+
+## 磁盘上的位置
+
+```text
+~/.onebook/
+  settings.json               应用偏好
+  models.json                 服务商和 API 密钥
+  projects.json               项目清单
+  window-state.json           上次窗口的尺寸和位置
+  projects/
+    research/
+      db/
+        data.db               一个项目一个 SQLite 文件
+        data.db-wal
+        data.db-shm
+      export/                 你从应用里写出来的东西
+```
+
+项目就是最里面那个目录。项目别的东西都不存在外面，于是那些通常让人紧张的操作变得很平：
+
+- **备份**——复制这个目录。
+- **换机器**——再复制一遍，在新应用里登记一下。
+- **把一个笔记本拆成两个**——建第二个项目，把区块挪过去；或者干脆重来。
+
+`~/.onebook` 在各个平台上都放在主目录下面，这是有意绕开 Electron 的 `userData` 路径的，这样重装应用不会
+把你的笔记一起删掉。
+
+## pragma 设置
+
+每个项目数据库打开时会执行：
+
+```sql
+PRAGMA journal_mode = WAL;
+PRAGMA synchronous = NORMAL;
+PRAGMA foreign_keys = ON;
+```
+
+WAL 让读取不被阻塞，即使某个运行正在往 completion 区块里流式写文本。`foreign_keys` 有用，因为
+`blocks.parent_id` 是真的外键约束，删除时 `SET NULL`；`block_links` 两端都是 `CASCADE`。
+
+数据库访问是同步的——better-sqlite3，经 Kysely 调用，全在 Electron 主进程里。渲染进程只发 IPC 调用，
+碰不到文件。
+
+## 表
+
+三张，都在 `v001_init.ts` 里建：
+
+| 表            | 存什么                                                                              |
+| :------------ | :---------------------------------------------------------------------------------- |
+| `blocks`      | 树本身：正文、类型、`parent_id`、`position`、软删除标记、`is_snapshot`              |
+| `block_links` | `source_id`、`target_id`、`type`——`block_link` 或 `block_embed`，三者组合作唯一约束 |
+| `block_fts`   | FTS5 虚表，索引 `title` 和 `content`，`block_id` 是 UNINDEXED                       |
+
+`blocks` 上的索引都是部分索引，每个都带 `WHERE is_deleted = 0`。
+
+## 检索
+
+FTS5 自带的分词器不会切中文，所以 OneBook 在文本进索引之前先自己切。`tokenizeForFts()` 拿 nodejieba 的
+`cutForSearch()` 处理正文，过滤掉一张四十个左右常用虚词的停用词表，剩下的词用空格连着存进去。那一列仍然
+声明 `tokenize="porter"`，于是同一段文本里的英文单词由 porter 词干化接手。
+
+查询走同样的分词——`tokenizeQuery()`，但这一路保留停用词，好让短语还能匹配——然后执行：
+
+```sql
+SELECT b.* FROM blocks b
+JOIN block_fts fts ON b.id = fts.block_id
+WHERE block_fts MATCH ?
+  AND b.is_deleted = 0
+ORDER BY rank;
+```
+
+保持索引和区块一致的是应用代码，不是 SQLite 触发器：`updateBlockWithSync()` 在区块写入的同一个事务里调用
+`syncFts()` 和 `syncLinksForBlock()`，所以索引不会落后于你刚改过的那一行。
+
+一份索引，两个读的人。搜索面板和 agent 的 `searchBlocks` 跑的是同一条查询，所以你能搜到的它也能搜到，你
+搜不到的它也一样搜不到。
+
+## 还没有的东西
+
+没有向量检索。`sqlite-vec` 在 `optionalDependencies` 里躺着，没有代码 import 它。目前唯一的检索路径是
+关键词。
+
+笔记的导入导出也还没做，所以已有的 Markdown 语料搬不进来。两件事都在计划里，都还没开工。
+
+- [区块模型](/zh/block-model/) 讲 `blocks` 里的字段。
+- [智能体与提问](/zh/ai-agents/) 讲 `block_links` 和检索用在什么地方。

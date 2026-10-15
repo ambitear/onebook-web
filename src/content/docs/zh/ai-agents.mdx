@@ -1,0 +1,76 @@
+---
+title: 智能体与提问
+description: 一次提问如何变成树上的一根分支，agent 区块是什么，以及一次运行能调用哪七个工具。
+sidebar:
+  order: 4
+---
+
+## 一次运行就是一根分支
+
+发出提问时，OneBook 写入两个区块：
+
+```text
+agent      "文献综述"                <- 正文就是系统提示词
+  prompt   "整理我们关于 RAG 评测的记录"
+    completion                       <- 模型流式输出时不断写入
+      prompt   "这些在中文语料上哪些会失效？"
+        completion
+```
+
+运行的时候，OneBook 把 completion 区块的父区块当作提问，然后用递归 CTE 沿祖先链往上走，把消息历史拼出
+来。发给模型的请求，就是这条路一直走到根——没有单独的会话存储，也没有需要记牢的 thread id。
+
+同一个 completion 下面挂两个追问，就是两根分支，两条都留在树上。
+
+## agent 就是一个区块
+
+`type` 为 `agent` 的区块，正文即系统提示词，它的子区块是这个 agent 跑过的记录。提问会沿着父链向上找最近
+的那个 `agent` 祖先并使用它；一路走到顶都没找到，这次运行会被拒绝，并提示你把提问挪到某个 agent 区块下面。
+
+用哪个模型回答，记在提问区块的 `metadata.ai.model` 上，不在 agent 上。所以同一个 agent 换个模型再跑一遍，
+办法是在它下面更深一层重新问一次。
+
+## 上下文区块
+
+提问的 `context` 子区块通过 `ref_id` 指向另一个区块。请求发出之前，这些引用会被序列化，作为一条额外的
+user 消息注入：
+
+```xml
+<context-blocks>
+<block id="…" parent_id="…" type="context" title="出处：Lewis et al., 2020">
+… 被引用区块的正文 …
+</block>
+</context-blocks>
+```
+
+拼进去的值都会转义。这就是不粘贴原文、也能把一份材料交给模型的办法。
+
+## 七个工具
+
+每次运行用的是 Vercel AI SDK 的 `ToolLoopAgent`，绑定七个操作区块的工具，工具直接读写这个项目的数据库：
+
+| 工具                | 做什么                                       |
+| :------------------ | :------------------------------------------- |
+| `getBlock`          | 按 id 读一个区块                             |
+| `getChildBlocks`    | 列直接子区块，默认不返回快照行               |
+| `getBlockAncestors` | 沿祖先链走到根                               |
+| `searchBlocks`      | 全文检索，可用 `ref_id` 限定范围，结果有上限 |
+| `createBlock`       | 在某个父区块下加一个区块                     |
+| `updateBlock`       | 改正文、标题、metadata 或类型                |
+| `deleteBlock`       | 软删除一个区块和它的后代                     |
+
+其中两个格外小心。`updateBlock` 改正文或标题之前先写一个快照子区块，返回值里带上快照 id，模型于是知道自己
+能退回哪一版。`deleteBlock` 只打标记，子树可以从回收站恢复。
+
+agent 存下来的东西都是普通区块：出现在树上，进搜索索引，也能被 `[[slug]]` 链接。
+
+## 模型和密钥
+
+模型访问走 AI SDK 的 provider 包，一共注册了 21 个 adapter，覆盖 OpenAI、Anthropic、Google、DeepSeek、
+MoonshotAI、OpenRouter、本机的 Ollama，以及所有讲 OpenAI 兼容接口的服务。服务商配置和密钥在
+`~/.onebook/models.json`。只有主进程读这个文件，渲染进程按 id 要一个模型。
+
+没有中转服务，也没有账号。请求从你的机器直接发给你配置的那家。
+
+- [区块模型](/zh/block-model/) 讲 `prompt` / `completion` / `context` 这几个类型在表里的样子。
+- [数据与文件](/zh/data-and-files/) 讲 `searchBlocks` 读的到底是什么。

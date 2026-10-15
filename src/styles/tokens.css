@@ -1,0 +1,150 @@
+/* Hallmark · component: tokens · genre: editorial · theme: custom (tuned)
+ * vibe: "cool ink, one green, on plain white / plain black" · paper oklch(100% 0 0) / oklch(0% 0 0) · accent oklch(60.2% 0.1029 148.0) green
+ * axes: paper-band=light · display-style=grotesk-sans(Instrument Sans, 600) · accent-hue=green(148deg)
+ * source: src/renderer/styles/onebook-theme.css (hex → OKLCH), except the paper ramp: white / black per brief.
+ * contrast measured: accent-ink 5.71:1 on paper, faint 4.88:1 on the band surface, body text 11.07:1.
+ */
+
+:root {
+  /* ── Paper & ink ─────────────────────────────────────────────────────── */
+  --color-paper: oklch(100% 0 0);
+  --color-paper-raised: oklch(100% 0 0);
+  --color-paper-sunk: oklch(97.3% 0.0053 140.6);
+  --color-paper-band: oklch(94.4% 0.0119 138.4);
+  --color-rule: oklch(90.7% 0.0144 141.5);
+  --color-rule-strong: oklch(70.7% 0.0256 141.1);
+
+  --color-ink: oklch(35.3% 0.0247 136.2);
+  --color-ink-strong: oklch(26% 0.0221 138.5);
+  --color-ink-soft: oklch(46.9% 0.0312 133.0);
+  /* 5.73:1 on paper — faint is used for 11-12px captions, so it must clear 4.5
+     on every surface it lands on, band and wash included. It does NOT clear 4.5
+     on --color-rule (4.36), so never put faint text on a hovered control. */
+  --color-ink-faint: oklch(50.8% 0.0253 150.2);
+
+  /* ── Accent ──────────────────────────────────────────────────────────── */
+  /* --color-accent is decorative + large-type only (3.74:1 on paper).
+     Small accent-coloured text must use --color-accent-ink (5.71:1).
+     --color-accent-hover is where a filled button darkens to: on-accent text
+     stays above 4.5 there, which --color-accent would not. */
+  --color-accent: oklch(60.2% 0.1029 148.0);
+  --color-accent-ink: oklch(50.2% 0.0860 149.2);
+  --color-accent-hover: oklch(43.4% 0.0739 149.6);
+  --color-accent-wash: oklch(92.8% 0.0202 144.5);
+
+  --color-on-accent: oklch(100% 0 0);
+  --color-focus: oklch(50.2% 0.0860 149.2);
+
+  /* ── Brand mark ──────────────────────────────────────────────────────── */
+  /* resources/icons: dark tile, warm-white glyph. */
+  --logo-tile: #1a1a1a;
+  --logo-glyph: #f9f9f9;
+
+  /* ── Typography ──────────────────────────────────────────────────────── */
+  /* One sans for both display and body: headings carry hierarchy by weight and
+     size, not by a second typeface. Also frees CJK headings from a serif
+     fallback that renders thin at display sizes. */
+  --font-display: var(--font-body);
+  --font-body:
+    "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC",
+    "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --text-display: clamp(2.9rem, 1.6rem + 5.2vw, 5.4rem);
+  --text-display-s: clamp(2.1rem, 1.35rem + 2.9vw, 3.4rem);
+  --text-3xl: clamp(1.6rem, 1.25rem + 1.4vw, 2.3rem);
+  --text-2xl: clamp(1.32rem, 1.12rem + 0.9vw, 1.8rem);
+  --text-xl: clamp(1.12rem, 1.05rem + 0.3vw, 1.3rem);
+  --text-lg: 1.0625rem;
+  --text-base: 1rem;
+  --text-sm: 0.875rem;
+  --text-xs: 0.75rem;
+
+  --leading-display: 1.02;
+  --leading-body: 1.62;
+  --tracking-display: -0.02em;
+  --tracking-label: 0.07em;
+  --measure: 62ch;
+
+  /* ── Space (4pt) ─────────────────────────────────────────────────────── */
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.25rem;
+  --space-2xl: 3.25rem;
+  --space-3xl: 4.5rem;
+  --space-4xl: 7rem;
+
+  --page-max: 1180px;
+  --page-gutter: clamp(1.15rem, 4vw, 3.25rem);
+  --gutter-h: clamp(1.5rem, 5vw, 4rem);
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* ── Motion ──────────────────────────────────────────────────────────── */
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-in: cubic-bezier(0.55, 0.06, 0.68, 0.19);
+  --ease-in-out: cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  --dur-fast: 140ms;
+  --dur-base: 240ms;
+  --dur-slow: 420ms;
+}
+
+/* Dark inverts onto plain black. Everything above black, so the surface ramp
+   runs upward from the page: sunk < band < raised. */
+[data-theme="dark"] {
+  --color-paper: oklch(0% 0 0);
+  --color-paper-raised: oklch(28.6% 0.0117 142.6);
+  --color-paper-sunk: oklch(19.4% 0.0093 136.8);
+  --color-paper-band: oklch(24.5% 0.0121 142.6);
+  --color-rule: oklch(34.9% 0.0195 145.1);
+  --color-rule-strong: oklch(48.8% 0.0264 141.8);
+
+  --color-ink: oklch(87.9% 0.0214 143.5);
+  --color-ink-strong: oklch(97% 0.0095 133.6);
+  --color-ink-soft: oklch(80.5% 0.0263 143.3);
+  --color-ink-faint: oklch(71.4% 0.0290 141.9);
+
+  --color-accent: oklch(70.4% 0.1083 145.2);
+  --color-accent-ink: oklch(80.5% 0.0916 142.3);
+  --color-accent-hover: oklch(75.4% 0.1056 143.9);
+  --color-accent-wash: oklch(28.6% 0.0404 147.3);
+
+  --color-on-accent: oklch(0% 0 0);
+  --color-focus: oklch(80.5% 0.0916 142.3);
+
+  /* resources/icons-white: warm-white tile, dark glyph. */
+  --logo-tile: #faf9f5;
+  --logo-glyph: #1a1a1a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --color-paper: oklch(0% 0 0);
+    --color-paper-raised: oklch(28.6% 0.0117 142.6);
+    --color-paper-sunk: oklch(19.4% 0.0093 136.8);
+    --color-paper-band: oklch(24.5% 0.0121 142.6);
+    --color-rule: oklch(34.9% 0.0195 145.1);
+    --color-rule-strong: oklch(48.8% 0.0264 141.8);
+
+    --color-ink: oklch(87.9% 0.0214 143.5);
+    --color-ink-strong: oklch(97% 0.0095 133.6);
+    --color-ink-soft: oklch(80.5% 0.0263 143.3);
+    --color-ink-faint: oklch(71.4% 0.0290 141.9);
+
+    --color-accent: oklch(70.4% 0.1083 145.2);
+    --color-accent-ink: oklch(80.5% 0.0916 142.3);
+    --color-accent-hover: oklch(75.4% 0.1056 143.9);
+    --color-accent-wash: oklch(28.6% 0.0404 147.3);
+
+    --color-on-accent: oklch(0% 0 0);
+    --color-focus: oklch(80.5% 0.0916 142.3);
+
+    --logo-tile: #faf9f5;
+    --logo-glyph: #1a1a1a;
+  }
+}

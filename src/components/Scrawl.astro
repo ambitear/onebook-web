@@ -1,0 +1,22 @@
+---
+/**
+ * Hand-drawn annotation: a tapered marker band that runs under the phrase it
+ * wraps — thick where the pen lands, wobbling as it trails off. Deliberately not
+ * a ring around the words, and never placed on its own away from text.
+ *
+ * The band is filled rather than stroked because preserveAspectRatio="none"
+ * stretches it to the phrase width; a stroke would squash with that scale and
+ * the line weight would stop matching the type. Every bottom-edge point is the
+ * matching top-edge point plus a positive, monotonically shrinking thickness,
+ * so the two curves cannot cross however the source is scaled.
+ */
+---
+
+<span class="scrawl">
+  <slot />
+  <svg class="scrawl__mark" viewBox="0 0 160 15" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <path
+      d="M1.6 3.4C10 1.4 16 .4 24 .6C34 .9 38 4.6 44 5.2C52 5.9 58 3.6 66 2.8C76 1.8 80 .2 88 .4C98 .7 102 5 108 5.8C116 6.6 124 4.4 130 3.4C136 2.6 148 4.6 158.4 2.6L158.4 7.8C148 10.2 136 8.6 130 9.6C124 10.8 116 13.1 108 12.6C102 12 98 7.9 88 8C80 8 76 9.8 66 11.2C58 12.2 52 14.8 44 14.4C38 14 34 10.5 24 10.6C16 10.6 10 11.8 1.6 14Z"
+    />
+  </svg>
+</span>

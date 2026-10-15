@@ -1,0 +1,101 @@
+---
+import SectionHead from './SectionHead.astro'
+import TreeLabNode from './TreeLabNode.astro'
+import type { Lang } from '../lib/site'
+import { buildTree, copy } from '../lib/site'
+
+const { lang } = Astro.props as { lang: Lang }
+const t = copy[lang].treeLab
+const roots = buildTree(t.rows)
+---
+
+<section class="section lab" id="tree" aria-labelledby="tree-title">
+  <div class="shell">
+    <SectionHead title={t.heading} lead={t.lead} id="tree-title" />
+
+    <div class="lab__grid">
+      <figure class="figure lab__panel" data-reveal>
+        <div class="lab__bar">
+          <button type="button" class="lab__btn" data-lab-open="true">{t.expand}</button>
+          <button type="button" class="lab__btn" data-lab-open="false">{t.collapse}</button>
+        </div>
+        <ul class="tree lab__tree">
+          {roots.map((node, i) => (
+            <TreeLabNode {node} index={i} />
+          ))}
+        </ul>
+        <figcaption>{t.caption}</figcaption>
+      </figure>
+
+      <aside class="lab__aside" data-reveal>
+        <h3 class="lab__aside-title">{t.trailHeading}</h3>
+        <p class="lab__hint" data-lab-hint>{t.pickHint}</p>
+        <ol class="lab__crumbs" data-lab-crumbs aria-live="polite"></ol>
+        <p class="lab__meta">
+          <span>{t.depthLabel}</span>
+          <code data-lab-depth>—</code>
+        </p>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const lab = document.querySelector('.lab')
+
+    if (lab) {
+      const crumbs = lab.querySelector('[data-lab-crumbs]')
+      const hint = lab.querySelector('[data-lab-hint]')
+      const depthOut = lab.querySelector('[data-lab-depth]')
+
+      /** Each <li> holds its own row first, so the first match is that row — not a descendant's. */
+      function chain(row: Element): { type: string; label: string }[] {
+        const out: { type: string; label: string }[] = []
+        let li: Element | null = row.closest('li')
+        while (li && lab.contains(li)) {
+          const node = li.querySelector('[data-trail]')
+          if (node) out.unshift({ type: node.getAttribute('data-type') || '', label: node.getAttribute('data-label') || '' })
+          li = li.parentElement ? li.parentElement.closest('li') : null
+        }
+        return out
+      }
+
+      function paint(row: Element) {
+        const path = chain(row)
+        if (!crumbs || !path.length) return
+        crumbs.textContent = ''
+        path.forEach((step, i) => {
+          const li = document.createElement('li')
+          li.className = 'lab__crumb' + (i === path.length - 1 ? ' lab__crumb--here' : '')
+          const type = document.createElement('span')
+          type.className = 'lab__crumb-type'
+          type.textContent = step.type
+          const label = document.createElement('span')
+          label.className = 'lab__crumb-label'
+          label.textContent = step.label
+          li.append(type, label)
+          crumbs.append(li)
+        })
+        if (hint) hint.hidden = true
+        if (depthOut) depthOut.textContent = String(path.length - 1)
+        lab.querySelectorAll('[data-trail]').forEach((r) => {
+          if (r === row) r.setAttribute('data-picked', '')
+          else r.removeAttribute('data-picked')
+        })
+      }
+
+      lab.addEventListener('click', (event) => {
+        const row = event.target instanceof Element ? event.target.closest('[data-trail]') : null
+        if (row && lab.contains(row)) paint(row)
+      })
+
+      lab.querySelectorAll('[data-lab-open]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const open = btn.getAttribute('data-lab-open') === 'true'
+          lab.querySelectorAll('details').forEach((branch) => {
+            if (branch instanceof HTMLDetailsElement) branch.open = open
+          })
+        })
+      })
+    }
+  </script>
+</section>

@@ -1,0 +1,31 @@
+---
+import type { Lang } from '../lib/site'
+import { copy } from '../lib/site'
+
+const { lang } = Astro.props as { lang: Lang }
+const t = copy[lang].types
+---
+
+<table class="spec">
+  <caption>{t.lead}</caption>
+  <thead>
+    <tr>
+      <th scope="col">{t.columns[0]}</th>
+      <th scope="col" class="spec__name-col">{t.columns[1]}</th>
+      <th scope="col">{t.columns[2]}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {
+      t.rows.map((row) => (
+        <tr>
+          <th scope="row" class="spec__type">
+            {row.type}
+          </th>
+          <td class="spec__name spec__name-col">{row.name}</td>
+          <td>{row.behaviour}</td>
+        </tr>
+      ))
+    }
+  </tbody>
+</table>

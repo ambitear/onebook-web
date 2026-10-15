@@ -1,0 +1,46 @@
+---
+import TreeLabNode from './TreeLabNode.astro'
+import type { TreeNode } from '../lib/site'
+
+const { node, index = 0 } = Astro.props as { node: TreeNode; index?: number }
+const kids = node.children.length
+const picked = node.depth <= 1
+---
+
+<li style={`--i: ${index}`}>
+  {
+    kids > 0 ? (
+      <details class="lab__branch" open={picked}>
+        <summary
+          class:list={['lab__row', 'node', { 'node--root': node.depth === 0 }]}
+          data-trail
+          data-type={node.type}
+          data-label={node.label}
+          data-depth={node.depth}
+        >
+          <span class="node__caret" aria-hidden="true" />
+          <span class="node__type">{node.type}</span>
+          <span class="node__label">{node.label}</span>
+        </summary>
+        <ul>
+          {node.children.map((child, i) => (
+            <TreeLabNode node={child} index={i} />
+          ))}
+        </ul>
+      </details>
+    ) : (
+      <button
+        type="button"
+        class:list={['lab__row', 'node', 'node--leaf']}
+        data-trail
+        data-type={node.type}
+        data-label={node.label}
+        data-depth={node.depth}
+      >
+        <span class="node__caret node__caret--leaf" aria-hidden="true" />
+        <span class="node__type">{node.type}</span>
+        <span class="node__label">{node.label}</span>
+      </button>
+    )
+  }
+</li>

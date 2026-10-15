@@ -1,0 +1,150 @@
+---
+import BlockTree from '../components/BlockTree.astro'
+import BlockTypeTable from '../components/BlockTypeTable.astro'
+import Colophon from '../components/Colophon.astro'
+import Masthead from '../components/Masthead.astro'
+import Scrawl from '../components/Scrawl.astro'
+import SectionHead from '../components/SectionHead.astro'
+import SiteHead from '../components/SiteHead.astro'
+import Split from '../components/Split.astro'
+import TreeLab from '../components/TreeLab.astro'
+import '../styles/landing.css'
+import { buildTree, copy, docsUrl, PROVIDER_NAMES, SITE } from '../lib/site'
+import type { Lang } from '../lib/site'
+
+const lang = Astro.props.lang
+const t = copy[lang]
+const roots = buildTree(t.tree.rows)
+const head = t.hero.headline
+const emphasis = t.hero.headlineEmphasis
+const at = head.indexOf(emphasis)
+const ctaHead = t.cta.heading
+const ctaAt = ctaHead.indexOf(t.cta.headingEmphasis)
+const ctaTo = ctaAt + t.cta.headingEmphasis.length
+const skipLabel = lang === 'zh' ? '跳到正文' : 'Skip to content'
+---
+
+<!doctype html>
+<html lang={t.htmlLang}>
+  <head>
+    <SiteHead {lang} />
+  </head>
+  <body>
+    <a class="skip" href="#main">{skipLabel}</a>
+    <Masthead {lang} />
+
+    <main id="main">
+      <div class="shell">
+        <section class="hero" aria-labelledby="hero-title">
+          <div data-reveal>
+            <h1 class="hero__headline" id="hero-title">
+              {head.slice(0, at)}<Scrawl><em>{emphasis}</em></Scrawl>{head.slice(at + emphasis.length)}
+            </h1>
+            <p class="hero__lede">{t.hero.lede}</p>
+            <div class="hero__actions">
+              <a class="btn" href={docsUrl(lang, SITE.docsIndex)}>{t.hero.ctaDocs}</a>
+              <a class="btn btn--quiet" href={SITE.repo} rel="noopener noreferrer" target="_blank">
+                {t.hero.ctaGithub}
+              </a>
+            </div>
+            <p class="hero__note">{t.hero.platforms}</p>
+          </div>
+
+          <figure class="figure" data-reveal>
+            <ul class="tree">
+              {roots.map((node, i) => <BlockTree node={node} index={i} />)}
+            </ul>
+            <figcaption>{t.tree.caption}</figcaption>
+          </figure>
+        </section>
+      </div>
+
+      <section class="section" id="types">
+        <div class="shell">
+          <SectionHead title={t.types.heading} lead={t.types.lead} />
+          <BlockTypeTable {lang} />
+        </div>
+      </section>
+
+      <TreeLab {lang} />
+
+      {t.modules.map((module, i) => <Split module={module} lang={lang} index={i} />)}
+
+      <section class="section" id="cases">
+        <div class="shell">
+          <SectionHead title={t.cases.heading} lead={t.cases.lead} />
+          <dl class="cases">
+            {
+              t.cases.items.map((item) => (
+                <div>
+                  <dt>{item.situation}</dt>
+                  <dd>{item.action}</dd>
+                </div>
+              ))
+            }
+          </dl>
+        </div>
+      </section>
+
+      <section class="band" id="models">
+        <div class="shell">
+          <SectionHead title={t.providers.heading} lead={t.providers.lead} />
+          <ul class="chips">
+            {PROVIDER_NAMES.map((name) => <li>{name}</li>)}
+          </ul>
+          <p class="band__note">{t.providers.note}</p>
+        </div>
+      </section>
+
+      <section class="section" id="unbuilt">
+        <div class="shell">
+          <SectionHead title={t.unbuilt.heading} lead={t.unbuilt.lead} />
+          <ul class="unbuilt">
+            {t.unbuilt.items.map((item) => <li>{item}</li>)}
+          </ul>
+        </div>
+      </section>
+
+      <section class="cta">
+        <div class="shell cta__inner">
+          <h2 class="cta__title">
+            {ctaHead.slice(0, ctaAt)}<Scrawl>{ctaHead.slice(ctaAt, ctaTo)}</Scrawl>{ctaHead.slice(ctaTo)}
+          </h2>
+          <p class="cta__body">{t.cta.body}</p>
+          <div class="cta__row">
+            <a class="btn" href={docsUrl(lang, SITE.docsIndex)}>{t.cta.docs}</a>
+            <a class="link-arrow" href={SITE.repo} rel="noopener noreferrer" target="_blank">{t.cta.source}</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <Colophon {lang} />
+
+    <script>
+      const targets = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'))
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
+
+      if (reduced || !('IntersectionObserver' in window)) {
+        targets.forEach((el) => el.classList.add('is-in'))
+      } else {
+        const io = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (!entry.isIntersecting) return
+              entry.target.classList.add('is-in')
+              io.unobserve(entry.target)
+            })
+          },
+          { rootMargin: '0px 0px -10% 0px', threshold: 0.04 }
+        )
+        targets.forEach((el) => {
+          const host = el.closest('section') ?? el
+          const siblings = Array.from(host.querySelectorAll<HTMLElement>('[data-reveal]'))
+          el.style.setProperty('--reveal-i', String(Math.min(siblings.indexOf(el), 4)))
+          io.observe(el)
+        })
+      }
+    </script>
+  </body>
+</html>

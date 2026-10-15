@@ -1,0 +1,8 @@
+---
+const { title, lead, id } = Astro.props as { title: string; lead?: string; id?: string }
+---
+
+<header class="sec-head" data-reveal>
+  <h2 class="sec-head__title" {id && { id }}>{title}</h2>
+  {lead && <p class="sec-head__lead">{lead}</p>}
+</header>

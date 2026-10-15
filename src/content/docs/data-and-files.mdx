@@ -1,0 +1,99 @@
+---
+title: Data and files
+description: Where OneBook writes, what the tables look like, and how Chinese full-text search works.
+sidebar:
+  order: 5
+---
+
+## On disk
+
+```text
+~/.onebook/
+  settings.json               app preferences
+  models.json                 providers and API keys
+  projects.json               the project registry
+  window-state.json           last window size and position
+  projects/
+    research/
+      db/
+        data.db               one SQLite file per project
+        data.db-wal
+        data.db-shm
+      export/                 anything you write out from the app
+```
+
+A project is that inner directory. Nothing else about a project lives elsewhere, which makes the
+usual scary operations fairly boring:
+
+- **Backup** — copy the directory.
+- **Move machines** — copy it again, register it in the new app.
+- **Split one notebook into two** — create a second project and copy blocks across, or start fresh.
+
+`~/.onebook` sits under your home directory on every platform, deliberately outside Electron's
+`userData` path, so reinstalling the app does not take your notes with it.
+
+## Pragma settings
+
+Each project database opens with:
+
+```sql
+PRAGMA journal_mode = WAL;
+PRAGMA synchronous = NORMAL;
+PRAGMA foreign_keys = ON;
+```
+
+WAL keeps reads non-blocking while a generation run is streaming text into a completion block.
+`foreign_keys` matters because `blocks.parent_id` is a real constraint with `ON DELETE SET NULL`, and
+`block_links` cascades on both ends.
+
+Access is synchronous — better-sqlite3, driven through Kysely, from the Electron main process. The
+renderer sends IPC calls and never touches the file.
+
+## Tables
+
+Three of them, created in `v001_init.ts`:
+
+| Table         | What it holds                                                                        |
+| :------------ | :----------------------------------------------------------------------------------- |
+| `blocks`      | the tree: content, type, `parent_id`, `position`, soft-delete flags, `is_snapshot`   |
+| `block_links` | `source_id`, `target_id`, `type` — `block_link` or `block_embed`, unique as a triple |
+| `block_fts`   | an FTS5 virtual table over `title` and `content`, with `block_id` unindexed          |
+
+The indexes on `blocks` are partial — each one carries `WHERE is_deleted = 0` — so deleted subtrees
+stop costing anything to scan.
+
+## Search
+
+FTS5's built-in tokenizers do not segment Chinese, so OneBook does that before the text reaches the
+index. `tokenizeForFts()` runs the content through nodejieba's `cutForSearch()`, drops a stopword
+list of about forty common function words, and stores the remaining tokens space-separated. The
+column still declares `tokenize="porter"`, which now handles the Latin words inside the same text.
+
+Search applies the same segmentation to the query — `tokenizeQuery()`, which keeps stopwords so a
+phrase can still match — then runs:
+
+```sql
+SELECT b.* FROM blocks b
+JOIN block_fts fts ON b.id = fts.block_id
+WHERE block_fts MATCH ?
+  AND b.is_deleted = 0
+ORDER BY rank;
+```
+
+Keeping the FTS table in step is application code, not SQLite triggers: `updateBlockWithSync()` calls
+`syncFts()` and `syncLinksForBlock()` in the same transaction as the block write, so the index cannot
+lag behind the row you just edited.
+
+One index, two readers. The search panel and the agent's `searchBlocks` tool run this same query, so
+an agent finds what you find — and does not find what you cannot.
+
+## What is not there
+
+No embeddings. `sqlite-vec` is listed in `optionalDependencies`, and no code imports it. Keyword
+search is the only retrieval path today.
+
+There is no import or export of notes yet, so an existing Markdown corpus cannot move in. Both are
+planned; neither is started.
+
+- [The block model](/block-model/) describes the columns in `blocks`.
+- [Agents and prompts](/ai-agents/) describes what `block_links` and search are used for.

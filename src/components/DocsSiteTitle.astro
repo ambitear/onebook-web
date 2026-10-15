@@ -1,0 +1,31 @@
+---
+/**
+ * Starlight component override (`components.SiteTitle` in astro.config.mjs).
+ * Renders the same data as the built-in SiteTitle, but with the brand mark inlined
+ * so its colours follow --logo-tile / --logo-glyph instead of needing two image files.
+ */
+import LogoMark from './LogoMark.astro'
+
+const { siteTitle, siteTitleHref } = Astro.locals.starlightRoute
+---
+
+<a href={siteTitleHref} class="site-title">
+  <LogoMark size={26} />
+  <span translate="no">{siteTitle}</span>
+</a>
+
+<style>
+  .site-title {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-family: var(--font-display);
+    font-size: 1.1875rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--color-ink-strong);
+    text-decoration: none;
+    white-space: nowrap;
+    min-width: 0;
+  }
+</style>

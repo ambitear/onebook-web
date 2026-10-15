@@ -1,0 +1,59 @@
+---
+title: 快速开始
+description: 从源码运行 OneBook，打包安装包，建第一个项目。
+sidebar:
+  order: 2
+---
+
+OneBook 目前只提供源码，没有签好名的安装包可以下载。打包用
+[electron-builder](https://www.electron.build/)，在你自己机器上跑。
+
+## 环境要求
+
+- Node.js 20 或更高
+- 能编译原生模块的环境：`better-sqlite3` 和 `nodejieba` 都是 C++ 插件
+
+Windows 上意味着要装 Visual Studio Build Tools。如果 `npm install` 走完但应用打不开数据库，重新编译
+原生模块：
+
+```bash
+npm run rebuild
+```
+
+## 跑起来
+
+```bash
+git clone https://github.com/ambitear/onebook
+cd onebook
+npm install
+npm run dev
+```
+
+`npm run dev` 会启动 Electron，渲染进程带热更新。另外几个命令：
+
+| 命令                                    | 作用                                                |
+| :-------------------------------------- | :-------------------------------------------------- |
+| `npm run typecheck`                     | 主进程和渲染进程分别过一遍类型检查                  |
+| `npm run build`                         | 先类型检查，再打包 main / preload / renderer        |
+| `npm run build:unpack`                  | 生成一个未打包的 app 目录，想确认打包能否跑通就用它 |
+| `npm run build:win` / `:mac` / `:linux` | 打对应平台的安装包                                  |
+
+产物在 `dist/`，命名是 `onebook-<version>.<ext>`，Windows 多一个 `-setup`。
+
+## 第一个项目
+
+应用首次打开会在 `~/.onebook/projects/` 下建一个 `default` 项目。项目就是一个目录，自带一个数据库，
+所以想把调研和工作分开，就建两个项目。
+
+写点东西：
+
+1. 新建一个区块，它出现在树的顶层。
+2. 在里面写 Markdown。区块工具栏里的 Edit 切到 CodeMirror 编辑器，Preview 切回渲染视图。
+3. 把一个区块拖到另一个区块上，就成了它的子区块。整个子树跟着走。
+
+区块顺序由 `position` 决定，你拖成什么样，看到的就是什么样。
+
+## 下一步
+
+- 想弄清楚区块到底是什么，读[区块模型](/zh/block-model/)。
+- 想直接看数据库，读[数据与文件](/zh/data-and-files/)。

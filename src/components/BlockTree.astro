@@ -1,0 +1,22 @@
+---
+import BlockTree from './BlockTree.astro'
+import type { TreeNode } from '../lib/site'
+
+const { node, index = 0 } = Astro.props as { node: TreeNode; index?: number }
+---
+
+<li style={`--i: ${index}`}>
+  <div class:list={['node', { 'node--root': node.depth === 0 }]}>
+    <span class="node__type">{node.type}</span>
+    <span class="node__label">{node.label}</span>
+  </div>
+  {
+    node.children.length > 0 && (
+      <ul>
+        {node.children.map((child, i) => (
+          <BlockTree node={child} index={i} />
+        ))}
+      </ul>
+    )
+  }
+</li>

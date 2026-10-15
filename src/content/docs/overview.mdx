@@ -1,0 +1,43 @@
+---
+title: What OneBook is
+description: The mental model behind OneBook — one block table, one tree, one SQLite file per project.
+sidebar:
+  order: 1
+---
+
+OneBook is a desktop notebook built on Electron. Everything you put in it — a note, a checklist, an
+agent definition, the question you sent a model, the answer that came back — is a **block**.
+
+Blocks live in one table. A block has a `parent_id`, so blocks form a tree, and a `position` written
+with fractional indexing, so you can drop a new child between two existing ones without renumbering
+anything. That tree is the interface: you navigate it, drag things around inside it, and collapse the
+parts you are not reading.
+
+## Why one table matters
+
+Chat history is normally stored somewhere else — a session log, a thread record, a vendor's server.
+In OneBook a conversation is a branch of the notebook. A follow-up question becomes a `prompt` block
+under the `completion` block it answers, so the ancestor chain of any block _is_ the message history
+that produced it. There is no second place to keep, and no sync between two stores that can disagree.
+
+The same holds for AI agents. An agent is a block whose text is its system instructions. Its runs hang
+underneath it, in the same tree as your notes.
+
+## Four things to know before you start
+
+- **A project is a directory.** Its data is a SQLite file inside it, at `db/data.db`. Copy the
+  directory and you have a backup.
+- **Nothing is hosted.** There is no account and no telemetry. When a request leaves your machine it
+  goes straight to the model provider you configured.
+- **Deleting is reversible.** Blocks are flagged, not removed, and go to a trash view you can restore
+  from.
+- **Markdown is the writing format.** Block content is Markdown: GitHub-flavoured tables, math,
+  Mermaid diagrams, and highlighted code.
+
+## Where to go next
+
+- [Getting started](/getting-started/) runs the app from source.
+- [The block model](/block-model/) explains the seven types and how the tree works.
+- [Agents and prompts](/ai-agents/) covers prompt chains, the seven tools an agent can call, and
+  model providers.
+- [Data and files](/data-and-files/) lists the tables and the on-disk layout.

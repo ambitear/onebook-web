@@ -1,0 +1,101 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400..600&display=swap");
+@import "./tokens.css";
+
+/* Hallmark · component: starlight-theme · genre: editorial · theme: custom (tuned)
+ * maps Starlight's --sl-* primitives onto the landing page's brand tokens,
+ * light and dark, so the docs and the homepage are the same site.
+ */
+
+:root,
+:root[data-theme="light"],
+:root[data-theme="dark"] {
+  /* `--sl-color-white` is the foreground and `--sl-color-black` the background:
+     the ramp inverts between themes, so reference the role tokens, not raw colours. */
+  --sl-color-white: var(--color-ink-strong);
+  --sl-color-black: var(--color-paper);
+
+  --sl-color-gray-1: var(--color-ink-strong);
+  --sl-color-gray-2: var(--color-ink);
+  --sl-color-gray-3: var(--color-ink-soft);
+  --sl-color-gray-4: var(--color-ink-faint);
+  --sl-color-gray-5: var(--color-rule);
+  --sl-color-gray-6: var(--color-paper-sunk);
+  --sl-color-gray-7: var(--color-paper-sunk);
+
+  --sl-color-accent: var(--color-accent);
+  --sl-color-accent-high: var(--color-accent-ink);
+  --sl-color-accent-low: var(--color-accent-wash);
+
+  --sl-color-text: var(--color-ink);
+  --sl-color-text-accent: var(--color-accent-ink);
+  --sl-color-bg: var(--color-paper);
+  --sl-color-bg-nav: var(--color-paper);
+  --sl-color-bg-sidebar: var(--color-paper);
+  --sl-color-bg-inline-code: var(--color-paper-band);
+  --sl-color-hairline: var(--color-rule);
+  --sl-color-hairline-light: var(--color-rule);
+  --sl-color-hairline-shade: var(--color-rule);
+
+  --sl-font:
+    "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC",
+    "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --sl-font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --sl-line-height: 1.7;
+  --sl-line-height-headings: 1.22;
+}
+
+/* Same sans as the landing page, heavier: hierarchy by weight, not by a second
+   typeface. The page title sits in Starlight's header, outside
+   `.sl-markdown-content`. */
+.sl-container > h1,
+.sl-markdown-content :is(h1, h2, h3) {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: var(--tracking-display);
+  font-style: normal;
+  color: var(--color-ink-strong);
+}
+
+/* Green-tinted hairlines instead of the default cool greys on tables and rules. */
+.sl-markdown-content table :is(th, td) {
+  border-color: var(--color-rule);
+}
+
+.sl-markdown-content :is(th, td) code {
+  color: var(--color-accent-ink);
+}
+
+a:hover,
+.sl-markdown-content a {
+  color: var(--color-accent-ink);
+}
+
+/* The docs header should not read as a second brand. */
+site-title h2 {
+  font-family: var(--sl-font);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Sidebar groups hang off a rail with ticks into each page, the same geometry
+   the landing page draws for the block tree: one structure, two renderings. */
+nav.sidebar details > ul {
+  margin-inline-start: 0.3rem;
+  padding-inline-start: 0.7rem;
+  border-inline-start: 1px solid var(--color-rule);
+}
+
+nav.sidebar details > ul > li {
+  position: relative;
+}
+
+nav.sidebar details > ul > li::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: -0.7rem;
+  inset-block-start: 1.05rem;
+  inline-size: 0.7rem;
+  block-size: 1px;
+  background: var(--color-rule);
+}

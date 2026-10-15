@@ -1,0 +1,46 @@
+---
+import { copy, SITE } from '../lib/site'
+import { faviconSwap } from '../lib/favicon-swap.mjs'
+import type { Lang } from '../lib/site'
+
+const lang = Astro.props.lang
+const t = copy[lang]
+const other: Lang = lang === 'en' ? 'zh' : 'en'
+const href = lang === 'en' ? '/zh/' : '/'
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{t.meta.title}</title>
+<meta name="description" content={t.meta.description} />
+<meta name="generator" content={Astro.generator} />
+<link rel="canonical" href={new URL(lang === 'zh' ? '/zh/' : '/', Astro.site ?? SITE.home).href} />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link
+  rel="alternate"
+  hreflang={other}
+  href={href}
+/>
+<link rel="alternate" hreflang="x-default" href="/" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content={t.meta.title} />
+<meta property="og:description" content={t.meta.description} />
+<meta property="og:url" content={new URL(lang === 'zh' ? '/zh/' : '/', Astro.site ?? SITE.home).href} />
+<meta name="twitter:card" content="summary" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400..600&display=swap"
+/>
+
+<script is:inline>
+  // Must stay inline: a bundled module is deferred and would flash the wrong paper colour.
+  document.documentElement.classList.add('js')
+  try {
+    const stored = localStorage.getItem('starlight-theme')
+    if (stored === 'dark' || stored === 'light') document.documentElement.dataset.theme = stored
+  } catch {}
+</script>
+<script is:inline set:html={faviconSwap} />

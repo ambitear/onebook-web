@@ -1,0 +1,21 @@
+---
+import type { Lang, Module } from '../lib/site'
+import Proof from './Proof.astro'
+
+const { module, lang, index } = Astro.props as { module: Module; lang: Lang; index: number }
+const wide = module.proof === 'chain'
+---
+
+<section class:list={['split', { 'split--flip': index % 2 === 1, 'split--wide': wide }]} id={module.proof}>
+  <div class="shell">
+    <div class="split__text" data-reveal>
+      <h3 class="split__title">{module.heading}</h3>
+      {module.body.map((para) => (
+        <p class="split__body">{para}</p>
+      ))}
+    </div>
+    <div class="split__proof" data-reveal>
+      <Proof module={module} {lang} />
+    </div>
+  </div>
+</section>

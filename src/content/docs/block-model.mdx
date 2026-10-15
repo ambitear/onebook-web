@@ -1,0 +1,75 @@
+---
+title: The block model
+description: The seven block types, how the tree is ordered, and what happens when you delete or rewrite a block.
+sidebar:
+  order: 3
+---
+
+A block is one row in the `blocks` table. It has a title, Markdown content, a type, a parent, and a
+position among its siblings.
+
+## The columns
+
+| Column                      | Type    | Notes                                                                     |
+| :-------------------------- | :------ | :------------------------------------------------------------------------ |
+| `id`                        | text    | primary key                                                               |
+| `title`                     | text    | not null, defaults to empty                                               |
+| `slug`                      | text    | normalised, unique among non-deleted blocks                               |
+| `content`                   | text    | Markdown source                                                           |
+| `metadata`                  | text    | JSON string — icon, colour, view mode                                     |
+| `type`                      | text    | one of the seven below                                                    |
+| `position`                  | text    | fractional index key, orders siblings                                     |
+| `parent_id`                 | text    | `null` puts the block at the top level                                    |
+| `ref_id`                    | text    | pointer to another block — a `context` child names the block it brings in |
+| `created_at` / `updated_at` | integer |                                                                           |
+| `deleted_at` / `is_deleted` | integer | soft delete                                                               |
+| `is_snapshot`               | integer | 1 when this row preserves an earlier state                                |
+
+Indexes are partial: they exclude deleted rows, so the tree stays cheap to query as the trash grows.
+
+## Seven types
+
+| Type         | Created by    | Renders as                                  |
+| :----------- | :------------ | :------------------------------------------ |
+| `note`       | you           | Markdown preview, CodeMirror editor         |
+| `prompt`     | you, or a run | the question, with model controls attached  |
+| `completion` | a run         | the streamed answer                         |
+| `agent`      | you           | instructions plus the runs filed underneath |
+| `craft`      | you           | Markdown, like a note                       |
+| `script`     | you           | a JavaScript source editor                  |
+| `context`    | you           | a reference to another block                |
+
+`completion` is the only type you cannot make by hand — it is what a model writes back. `craft` looks
+like a note because it _is_ one; the distinction is intent, not rendering. `script` is not executed
+yet; it is stored and highlighted.
+
+## Ordering and moving
+
+Sibling order comes from `position`, a fractional indexing key. To place a block between two others
+OneBook generates a key that sorts between their keys, so the move is a single-row `UPDATE`. Nothing
+else is renumbered, no matter how wide the level is.
+
+Moving a subtree re-parents the top block. Children keep their own position keys, so the shape inside
+the subtree survives the move.
+
+## Deleting
+
+Delete sets `is_deleted` and `deleted_at`; the row and its descendants leave the tree but stay in the
+database. The trash view lists deleted roots, and restoring brings a subtree back with its position
+key intact. `purge` is the one operation that actually removes rows.
+
+## Rewriting
+
+When a prompt asks an agent to change a block's content, OneBook copies the current state into a
+snapshot child first (`is_snapshot = 1`, positioned last among the children). The old text is a block
+like any other: you can read it, search it, and link to it.
+
+## Slugs and links
+
+Each block can carry a slug — the lowercase, hyphenated form of its title, normalised by a single
+function used on both the write path and the read path. In content, `[[slug]]` becomes a link and
+`((block-id))` becomes an embed. On save, those references are extracted into `block_links` as
+`block_link` or `block_embed` edges, which turns a backlinks query into a plain `SELECT`.
+
+- [Agents and prompts](/ai-agents/) uses this table for something other than notes.
+- [Data and files](/data-and-files/) shows the schema and the search index.

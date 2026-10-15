@@ -1,0 +1,29 @@
+---
+import LogoMark from './LogoMark.astro'
+import type { Lang } from '../lib/site'
+import { copy, docsUrl, SITE } from '../lib/site'
+
+const { lang } = Astro.props as { lang: Lang }
+const t = copy[lang]
+const startLabel = lang === 'zh' ? '上手' : 'Getting started'
+---
+
+<footer class="colophon">
+  <div class="shell">
+    <p class="colophon__tag">
+      <LogoMark size={22} />
+      <span>{t.footer.tagline}</span>
+    </p>
+    <nav class="colophon__links" aria-label={t.nav.docs}>
+      <a href={docsUrl(lang, 'overview')}>{t.nav.docs}</a>
+      <a href={docsUrl(lang, 'getting-started')}>{startLabel}</a>
+      <a href={SITE.repo} rel="noopener noreferrer" target="_blank">{t.nav.github}</a>
+      <a href={SITE.issues} rel="noopener noreferrer" target="_blank">{t.nav.issues}</a>
+      <a href={SITE.home} rel="noopener noreferrer" target="_blank">onebook.net</a>
+    </nav>
+    <p>
+      {t.footer.built} <span class="colophon__cmd">{t.footer.builtCmd}</span>
+    </p>
+    <p>{t.footer.copyright}</p>
+  </div>
+</footer>

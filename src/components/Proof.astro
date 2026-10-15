@@ -1,0 +1,137 @@
+---
+import type { Lang, Module } from '../lib/site'
+import { copy } from '../lib/site'
+
+const { module, lang } = Astro.props as { module: Module; lang: Lang }
+
+const TOOLS: Record<Lang, { name: string; what: string }[]> = {
+  en: [
+    { name: 'getBlock', what: 'read one block' },
+    { name: 'getChildBlocks', what: 'list children, in order' },
+    { name: 'getBlockAncestors', what: 'walk up to the root' },
+    { name: 'searchBlocks', what: 'the panel’s index, scope by ref_id' },
+    { name: 'createBlock', what: 'file something under a parent' },
+    { name: 'updateBlock', what: 'replace text or metadata' },
+    { name: 'deleteBlock', what: 'soft delete, restorable' }
+  ],
+  zh: [
+    { name: 'getBlock', what: '读一个区块' },
+    { name: 'getChildBlocks', what: '按顺序列子区块' },
+    { name: 'getBlockAncestors', what: '向上回溯到根' },
+    { name: 'searchBlocks', what: '和搜索面板读同一份索引，可按 ref_id 收窄' },
+    { name: 'createBlock', what: '把内容归到某个父区块下' },
+    { name: 'updateBlock', what: '替换正文或元数据' },
+    { name: 'deleteBlock', what: '软删除，可恢复' }
+  ]
+}
+
+const FILES: Record<Lang, { path: string; note: string }[]> = {
+  en: [
+    { path: '~/.onebook/settings.json', note: 'app preferences' },
+    { path: '~/.onebook/models.json', note: 'your provider keys' },
+    { path: '~/.onebook/projects.json', note: 'the project registry' },
+    { path: '~/.onebook/projects/<name>/db/data.db', note: 'SQLite, WAL mode' },
+    { path: '~/.onebook/projects/<name>/export/', note: 'what you write out' }
+  ],
+  zh: [
+    { path: '~/.onebook/settings.json', note: '应用偏好' },
+    { path: '~/.onebook/models.json', note: '你配置的模型密钥' },
+    { path: '~/.onebook/projects.json', note: '项目清单' },
+    { path: '~/.onebook/projects/<name>/db/data.db', note: 'SQLite，WAL 模式' },
+    { path: '~/.onebook/projects/<name>/export/', note: '你往外导出的东西' }
+  ]
+}
+
+const REFS: Record<Lang, { from: string; to: string }[]> = {
+  en: [
+    { from: '[[My Page]]', to: 'my-page' },
+    { from: '[[CRO 是什么？]]', to: 'cro-是什么' },
+    { from: '[[  RAG  Notes  ]]', to: 'rag-notes' },
+    { from: '((4f2c9a1e-…))', to: 'an embed edge' }
+  ],
+  zh: [
+    { from: '[[My Page]]', to: 'my-page' },
+    { from: '[[CRO 是什么？]]', to: 'cro-是什么' },
+    { from: '[[  RAG  Notes  ]]', to: 'rag-notes' },
+    { from: '((4f2c9a1e-…))', to: '一条嵌入边' }
+  ]
+}
+
+const SQL = `WITH RECURSIVE strict_path AS (
+  SELECT id, parent_id, position, 0 AS depth
+  FROM blocks
+  WHERE id = ? AND type = 'prompt'
+    AND is_deleted = 0
+
+  UNION ALL
+
+  SELECT b.id, b.parent_id, b.position, sp.depth + 1
+  FROM blocks b
+  JOIN strict_path sp ON b.id = sp.parent_id
+  WHERE b.type = 'prompt' AND b.is_deleted = 0
+)
+SELECT b.*, sp.depth
+FROM strict_path sp
+JOIN blocks b
+  ON (b.parent_id = sp.parent_id
+      OR (b.parent_id IS NULL
+          AND sp.parent_id IS NULL))
+ AND b.position <= sp.position
+ORDER BY sp.depth DESC, b.position ASC`
+
+const SOURCE: Record<Lang, string> = {
+  en: 'block.repository.ts',
+  zh: 'block.repository.ts'
+}
+---
+
+<div class="proof">
+  {module.proof === 'chain' && <pre class="proof__pre">{SQL}</pre>}
+
+  {
+    module.proof === 'tools' && (
+      <ul class="tool-list">
+        {TOOLS[lang].map((tool) => (
+          <li>
+            <span class="tool-list__name">{tool.name}</span>
+            <span class="tool-list__what">{tool.what}</span>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+
+  {
+    (module.proof === 'files' || module.proof === 'index') && (
+      <div class="spec-strip">
+        {(module.proof === 'files' ? FILES[lang] : copy[lang].indexRows).map((row) => (
+          <div class="spec-strip__row">
+            <span class="spec-strip__term">{row.path ?? row.term}</span>
+            <span class="spec-strip__desc">{row.note ?? row.desc}</span>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  {
+    module.proof === 'refs' && (
+      <div class="ref-pair">
+        {REFS[lang].map((pair) => (
+          <div class="ref-pair__row">
+            <span class="ref-pair__from">{pair.from}</span>
+            <span class="ref-pair__arrow" aria-hidden="true">
+              →
+            </span>
+            <span class="ref-pair__to">{pair.to}</span>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  <p class="proof__caption">
+    {module.proofCaption}
+    {module.proof === 'chain' && <span> · {SOURCE[lang]}</span>}
+  </p>
+</div>

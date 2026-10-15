@@ -1,0 +1,81 @@
+---
+title: Agents and prompts
+description: How a prompt becomes a branch of the tree, what an agent block is, and the seven tools a run can call.
+sidebar:
+  order: 4
+---
+
+## A run is a branch
+
+When you send a prompt, OneBook writes two blocks:
+
+```text
+agent      "Literature review"          <- instructions live in its content
+  prompt   "Summarise what we keep…"    <- your text
+    completion                          <- written while the model streams
+      prompt   "Which of these fail…"   <- the follow-up
+        completion
+```
+
+At run time OneBook takes the completion block's parent as the prompt, then walks the ancestor chain
+with a recursive CTE to rebuild the messages. The request sent to the model _is_ the path up to the
+root — there is no separate session store, and no thread id to keep straight.
+
+Two follow-ups under the same completion give you two branches. Both stay in the tree.
+
+## An agent is a block
+
+A block of type `agent` holds the system instructions in its `content`. Its children are that
+agent's runs. A prompt looks upward for the nearest `agent` ancestor and uses it; if there is none,
+the run is refused with a message telling you to move the prompt under an agent.
+
+Which model answers is stored on the prompt block (`metadata.ai.model`), not on the agent, so the
+same agent can be re-run against a different model by re-asking it one level deeper.
+
+## Context blocks
+
+A `context` child of a prompt points at another block through `ref_id`. Before the request goes out,
+those references are serialised and injected as an extra user message:
+
+```xml
+<context-blocks>
+<block id="…" parent_id="…" type="context" title="Source: Lewis et al., 2020">
+… the referenced content …
+</block>
+</context-blocks>
+```
+
+Values are escaped on the way in. This is how you hand a model a source without pasting it.
+
+## The seven tools
+
+A run gets `ToolLoopAgent` from the Vercel AI SDK, with seven tools bound to the project database:
+
+| Tool                | What it does                                                       |
+| :------------------ | :----------------------------------------------------------------- |
+| `getBlock`          | read a block by id                                                 |
+| `getChildBlocks`    | list direct children; snapshot rows are hidden unless asked for    |
+| `getBlockAncestors` | walk up to the root                                                |
+| `searchBlocks`      | full-text search, optionally scoped by `ref_id`, capped by a limit |
+| `createBlock`       | add a block under a parent                                         |
+| `updateBlock`       | change content, title, metadata or type                            |
+| `deleteBlock`       | soft-delete a block and its descendants                            |
+
+Two of them are careful by construction. `updateBlock` writes a snapshot child before it changes
+content or title, and returns the snapshot's id in its result so the model knows what it can roll
+back to. `deleteBlock` only flags rows — the subtree is restorable from the trash.
+
+Everything an agent files is a normal block. It appears in the tree, enters the search index, and can
+be linked with `[[slug]]` like anything else you wrote yourself.
+
+## Models and keys
+
+Model access runs on the AI SDK's provider packages; 21 adapters are registered, covering OpenAI,
+Anthropic, Google, DeepSeek, Moonshot, OpenRouter, local Ollama, and anything that speaks the
+OpenAI-compatible interface. Providers and their keys live in `~/.onebook/models.json`. Only the main
+process reads that file; the renderer asks for a model by id.
+
+There is no proxy and no account. A request goes from your machine to the provider you configured.
+
+- [The block model](/block-model/) covers the `prompt` / `completion` / `context` types in the schema.
+- [Data and files](/data-and-files/) explains what `searchBlocks` is actually reading.

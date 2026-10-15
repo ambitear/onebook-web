@@ -1,0 +1,61 @@
+---
+title: Getting started
+description: Run OneBook from source, build an installer, and create your first project.
+sidebar:
+  order: 2
+---
+
+OneBook is distributed as source. There is no signed build to download yet — packaging runs locally
+with [electron-builder](https://www.electron.build/).
+
+## Requirements
+
+- Node.js 20 or newer
+- A platform that can compile native modules: `better-sqlite3` and `nodejieba` are both C++ addons
+
+On Windows that means a Visual Studio Build Tools installation. If `npm install` finishes but the app
+cannot open a database, rebuild the native modules:
+
+```bash
+npm run rebuild
+```
+
+## Run it
+
+```bash
+git clone https://github.com/ambitear/onebook
+cd onebook
+npm install
+npm run dev
+```
+
+`npm run dev` starts Electron with hot reload in the renderer. Other scripts worth knowing:
+
+| Command                                 | What it does                                                                        |
+| :-------------------------------------- | :---------------------------------------------------------------------------------- |
+| `npm run typecheck`                     | Type-checks the main process and the renderer separately                            |
+| `npm run build`                         | Type-check, then bundle main / preload / renderer                                   |
+| `npm run build:unpack`                  | Build, then produce an unpacked app directory — the quickest way to check packaging |
+| `npm run build:win` / `:mac` / `:linux` | Build an installer for that platform                                                |
+
+Artifacts land in `release/` and are named `onebook-<version>.<ext>` (Windows adds `-setup`).
+
+## First project
+
+When the app opens it creates a project called `default` under `~/.onebook/projects/`. A project is
+just a directory, and it holds its own database, so you can keep research apart from work by making
+two of them.
+
+To write something:
+
+1. Create a block. It appears at the top level of the tree.
+2. Type Markdown into it. The **编辑 / Edit** action in the block's toolbar swaps the rendered
+   preview for the CodeMirror editor; **预览 / Preview** swaps it back.
+3. Drag a block onto another block to make it a child. The whole subtree moves with it.
+
+Blocks are ordered by their `position` key, and the order you see is the order you dragged into.
+
+## Next
+
+- [The block model](/block-model/) if you want to know what a block actually is.
+- [Data and files](/data-and-files/) if you would rather read the SQLite file yourself.
